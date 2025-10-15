@@ -55,10 +55,8 @@ object CaptureProvideModule {
     fun provideCaptureRepository(
         screenMetricsDataSource: ScreenMetricsDataSourceImpl,
         imageReaderDataSource: ImageReaderDataSource,
-        virtualDisplayDataSource: VirtualDisplayDataSource
     ): CaptureRepository = CaptureRepositoryImpl(
         screenMetricsDataSource = screenMetricsDataSource,
         imageReaderDataSource = imageReaderDataSource,
-        virtualDisplayDataSource = virtualDisplayDataSource
     )
 }

@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -45,7 +44,5 @@ class CaptureViewModel @Inject constructor(
         _mediaProjectionIntent.value = getMediaProjectionIntentUseCase()
     }
 
-    fun clearMediaProjectionIntent() {
-        _mediaProjectionIntent.value = null
     }
 }

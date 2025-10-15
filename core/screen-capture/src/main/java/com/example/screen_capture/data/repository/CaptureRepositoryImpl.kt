@@ -22,9 +22,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
@@ -32,9 +29,7 @@ import javax.inject.Inject
 class CaptureRepositoryImpl @Inject constructor(
     private val screenMetricsDataSource: ScreenMetricsDataSource,
     private val imageReaderDataSource: ImageReaderDataSource,
-    private val virtualDisplayDataSource: VirtualDisplayDataSource
 ) : CaptureRepository {
-
     private val _captureState: MutableStateFlow<CaptureState> = MutableStateFlow(CaptureState.Idle)
     private val lastFrameRef = AtomicReference<CaptureFrame?>(null)
     private val _frame: MutableSharedFlow<CaptureFrame?> = MutableSharedFlow(
@@ -55,7 +50,6 @@ class CaptureRepositoryImpl @Inject constructor(
 
     override fun observeCaptureState(): Flow<CaptureState> = _captureState.asStateFlow()
 
-    override suspend fun startCapture(mediaProjection: MediaProjection) = withContext(Dispatchers.Default) {
         if (_captureState.value == CaptureState.Capturing) return@withContext
         try {
             this@CaptureRepositoryImpl.mediaProjection = mediaProjection
@@ -87,19 +81,14 @@ class CaptureRepositoryImpl @Inject constructor(
             )
 
             captureJob = scope.launch {
-                while (isActive && _captureState.value is CaptureState.Capturing) {
                     try {
-                        imageReader?.let {
-                            imageReaderDataSource.readFrame(it)?.let { bitmap ->
                                 val frame = CaptureFrame(bitmap = bitmap)
                                 lastFrameRef.set(frame)
                                 _frame.tryEmit(frame)
                             }
                         }
-                    } catch (error: Exception) {
                         break
                     }
-                    delay(16)
                 }
             }
         } catch (error: Exception) {

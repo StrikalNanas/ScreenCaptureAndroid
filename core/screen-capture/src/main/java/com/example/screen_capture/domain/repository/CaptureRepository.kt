@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface CaptureRepository {
     fun observeCaptureState(): Flow<CaptureState>
-    suspend fun startCapture(mediaProjection: MediaProjection)
     suspend fun stopCapture()
     fun observeFrame(): Flow<CaptureFrame?>
     fun getLastFrame(): CaptureFrame?

@@ -38,7 +38,6 @@ class CaptureService : Service() {
     @Inject
     lateinit var captureRepository: CaptureRepository
 
-    private val captureJob = CoroutineScope(Dispatchers.Default)
 
     private val notificationData = NotificationData(
         id = NOTIFICATION_ID,
@@ -67,17 +66,12 @@ class CaptureService : Service() {
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        val resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED)
-        val data = intent.getParcelableExtra<Intent>(EXTRA_DATA)
-
-        when(intent.action) {
-            ACTION_START -> {
+                val resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED)
+                val data = intent.getParcelableExtra<Intent>(EXTRA_DATA)
                 val mediaProjection = mediaProjectionRepository.getMediaProjection(
                     resultCode = resultCode,
-                    data = data!!
                 )
                 captureJob.launch {
-                    mediaProjection?.let { captureRepository.startCapture(it) }
                 }
             }
             ACTION_STOP -> {
@@ -93,7 +87,6 @@ class CaptureService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         notificationRepository.cancelNotification(NOTIFICATION_ID)
-        stopForeground(true)
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

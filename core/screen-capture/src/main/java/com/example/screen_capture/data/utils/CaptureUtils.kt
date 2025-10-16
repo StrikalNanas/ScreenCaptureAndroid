@@ -5,6 +5,7 @@ import android.media.Image
 
 object CaptureUtils {
     fun imageToBitmap(image: Image): Bitmap? {
+        return try {
             val plane = image.planes[0]
             val buffer = plane.buffer
             val pixelStride = plane.pixelStride
@@ -16,9 +17,20 @@ object CaptureUtils {
 
             val rowPadding = (rowStride - pixelStride * width).coerceAtLeast(0)
             val paddedWidth = width + rowPadding / pixelStride
+
+            buffer.rewind()
             val bitmap = Bitmap.createBitmap(paddedWidth, height, Bitmap.Config.ARGB_8888)
             bitmap.copyPixelsFromBuffer(buffer)
+
+            if (paddedWidth != width) {
                 Bitmap.createBitmap(bitmap, 0, 0, width, height)
+            } else {
+                bitmap
             }
+        } catch (_: Exception) {
+            null
         }
     }
+
+
+}

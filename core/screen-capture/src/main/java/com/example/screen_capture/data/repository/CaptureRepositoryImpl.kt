@@ -6,16 +6,20 @@ import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.os.Handler
 import android.os.HandlerThread
+import com.example.screen_capture.data.data_source.CaptureDelayDataSource
 import com.example.screen_capture.data.data_source.ImageReaderDataSource
 import com.example.screen_capture.data.data_source.ScreenMetricsDataSource
 import com.example.screen_capture.data.data_source.VirtualDisplayDataSource
 import com.example.screen_capture.domain.model.CaptureFrame
+import com.example.screen_capture.domain.model.CaptureMode
 import com.example.screen_capture.domain.model.CaptureState
 import com.example.screen_capture.domain.repository.CaptureRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +33,8 @@ import javax.inject.Inject
 class CaptureRepositoryImpl @Inject constructor(
     private val screenMetricsDataSource: ScreenMetricsDataSource,
     private val imageReaderDataSource: ImageReaderDataSource,
+    private val virtualDisplayDataSource: VirtualDisplayDataSource,
+    private val captureDelayDataSource: CaptureDelayDataSource
 ) : CaptureRepository {
     private val _captureState: MutableStateFlow<CaptureState> = MutableStateFlow(CaptureState.Idle)
     private val lastFrameRef = AtomicReference<CaptureFrame?>(null)
@@ -50,6 +56,10 @@ class CaptureRepositoryImpl @Inject constructor(
 
     override fun observeCaptureState(): Flow<CaptureState> = _captureState.asStateFlow()
 
+    override suspend fun startCapture(
+        mediaProjection: MediaProjection,
+        captureMode: CaptureMode
+    ) = withContext(Dispatchers.Default) {
         if (_captureState.value == CaptureState.Capturing) return@withContext
         try {
             this@CaptureRepositoryImpl.mediaProjection = mediaProjection
@@ -81,14 +91,20 @@ class CaptureRepositoryImpl @Inject constructor(
             )
 
             captureJob = scope.launch {
+                val delayMs = captureDelayDataSource.delayMs(captureMode)
+                while (_captureState.value is CaptureState.Capturing) {
                     try {
+                        imageReader?.let { imageReader ->
+                            imageReaderDataSource.readFrame(imageReader)?.let { bitmap ->
                                 val frame = CaptureFrame(bitmap = bitmap)
                                 lastFrameRef.set(frame)
                                 _frame.tryEmit(frame)
                             }
                         }
+                    } catch (_: Exception) {
                         break
                     }
+                    delay(delayMs)
                 }
             }
         } catch (error: Exception) {

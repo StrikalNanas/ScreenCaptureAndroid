@@ -1,6 +1,8 @@
 package com.example.screen_capture.di
 
 import android.content.Context
+import com.example.screen_capture.data.data_source.CaptureDelayDataSource
+import com.example.screen_capture.data.data_source.CaptureDelayDataSourceImpl
 import com.example.screen_capture.data.data_source.ImageReaderDataSource
 import com.example.screen_capture.data.data_source.ImageReaderDataSourceImpl
 import com.example.screen_capture.data.data_source.ScreenMetricsDataSource
@@ -22,6 +24,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class CaptureBindModule {
+    @Singleton
+    @Binds
+    abstract fun bindCaptureDelayDataSource(
+        impl: CaptureDelayDataSourceImpl
+    ): CaptureDelayDataSource
+
     @Singleton
     @Binds
     abstract fun bindImageReaderDataSource(
@@ -55,8 +63,12 @@ object CaptureProvideModule {
     fun provideCaptureRepository(
         screenMetricsDataSource: ScreenMetricsDataSourceImpl,
         imageReaderDataSource: ImageReaderDataSource,
+        virtualDisplayDataSource: VirtualDisplayDataSource,
+        captureDelayDataSource: CaptureDelayDataSource
     ): CaptureRepository = CaptureRepositoryImpl(
         screenMetricsDataSource = screenMetricsDataSource,
         imageReaderDataSource = imageReaderDataSource,
+        virtualDisplayDataSource = virtualDisplayDataSource,
+        captureDelayDataSource = captureDelayDataSource
     )
 }

@@ -12,9 +12,11 @@ import com.example.screen_capture.domain.repository.MediaProjectionRepository
 import com.example.notification.domain.model.NotificationConfig
 import com.example.notification.domain.model.NotificationData
 import com.example.notification.domain.repository.NotificationRepository
+import com.example.screen_capture.domain.model.CaptureMode
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -24,6 +26,7 @@ class CaptureService : Service() {
     companion object {
         const val ACTION_START = "ACTION_START_CAPTURE"
         const val ACTION_STOP = "ACTION_STOP_CAPTURE"
+        const val EXTRA_CAPTURE_MODE = "extra_capture_mode"
         const val EXTRA_RESULT_CODE = "extra_result_code"
         const val EXTRA_DATA = "extra_data"
         const val NOTIFICATION_ID = 1001
@@ -38,6 +41,7 @@ class CaptureService : Service() {
     @Inject
     lateinit var captureRepository: CaptureRepository
 
+    private val captureJob = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val notificationData = NotificationData(
         id = NOTIFICATION_ID,
@@ -66,12 +70,18 @@ class CaptureService : Service() {
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        when(intent.action) {
+            ACTION_START -> {
                 val resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED)
                 val data = intent.getParcelableExtra<Intent>(EXTRA_DATA)
+                val modeOrdinal = intent.getIntExtra(EXTRA_CAPTURE_MODE, CaptureMode.FPS_60.ordinal)
+                val captureMode = CaptureMode.entries[modeOrdinal]
                 val mediaProjection = mediaProjectionRepository.getMediaProjection(
                     resultCode = resultCode,
+                    data = data ?: return START_STICKY
                 )
                 captureJob.launch {
+                    mediaProjection?.let { captureRepository.startCapture(it, captureMode) }
                 }
             }
             ACTION_STOP -> {

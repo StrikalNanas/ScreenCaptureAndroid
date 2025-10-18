@@ -37,7 +37,7 @@ class CaptureViewModel @Inject constructor(
     val mediaProjectionIntent: StateFlow<Intent?> = _mediaProjectionIntent.asStateFlow()
 
     private val _captureMode: MutableStateFlow<CaptureMode> = MutableStateFlow(CaptureMode.FPS_60)
-    val captureMode: StateFlow<CaptureMode> = _captureMode
+    val captureMode: StateFlow<CaptureMode> = _captureMode.asStateFlow()
 
     val captureState: StateFlow<CaptureState> = observeCaptureStateUseCase()
         .stateIn(
